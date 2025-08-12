@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- SEO & Metadata -->
+    <meta charset="UTF-8">
+    <title>Kaleidoscope</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="An interactive webcam kaleidoscope that transforms your camera feed into a mesmerizing, real-time visual art piece with customizable patterns and motion.">
+    <meta name="keywords" content="kaleidoscope, webcam, interactive, visualizer, psychedelic, art, motion, real-time">
+    <meta name="author" content="Chris Pirillo">
+    <link rel="canonical" href="https://pirillo.com/arcade/kaleidoscope.html">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://pirillo.com/arcade/kaleidoscope.html">
+    <meta property="og:title" content="Kaleidoscope">
+    <meta property="og:description" content="An interactive webcam kaleidoscope that transforms your camera feed into a mesmerizing, real-time visual art piece with customizable patterns and motion.">
+    <meta property="og:image" content="https://pirillo.com/arcade/images/kaleidoscope.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://pirillo.com/arcade/kaleidoscope.html">
+    <meta property="twitter:title" content="Kaleidoscope">
+    <meta property="twitter:description" content="An interactive webcam kaleidoscope that transforms your camera feed into a mesmerizing, real-time visual art piece with customizable patterns and motion.">
+    <meta property="twitter:image" content="https://pirillo.com/arcade/images/kaleidoscope.png">
+    <meta property="twitter:creator" content="@ChrisPirillo">
+
+    <!-- Performance & Resource Hints -->
+    <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
+    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
+    
+    <!-- Tailwind CSS Script -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Inlined Critical CSS -->
+    <style>
+        /* Basic styles for layout and background */
+        body, html {
+            margin: 0; padding: 0; overflow: hidden;
+            height: 100%; width: 100%; background-color: #000;
+        }
+        #kaleidoscope-canvas { display: block; position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        #video-feed { display: none; }
+        
+        /* Menu container and toggle button */
+        #menu-container {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            z-index: 1001;
+            display: flex;
+            align-items: center;
+        }
+        #menu-toggle {
+            width: 40px; height: 32px; display: flex; flex-direction: column;
+            justify-content: space-between; cursor: pointer; background: rgba(0,0,0,0.3);
+            padding: 8px; border-radius: 8px;
+        }
+        #menu-toggle .hamburger-line {
+            width: 100%; height: 3px; background-color: white;
+            border-radius: 3px; transition: all 0.3s ease-in-out;
+        }
+
+        /* Corrected animation for hamburger -> X transform */
+        #sidebar.open ~ #menu-container #menu-toggle .hamburger-line:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+        #sidebar.open ~ #menu-container #menu-toggle .hamburger-line:nth-child(2) { opacity: 0; }
+        #sidebar.open ~ #menu-container #menu-toggle .hamburger-line:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+        
+        /* Sidebar styles */
+        #sidebar {
+            position: fixed; top: 0; right: 0; width: 320px; height: 100%;
+            background-color: rgba(17, 24, 39, 0.9); backdrop-filter: blur(10px);
+            z-index: 1000; transform: translateX(100%); transition: transform 0.3s ease-in-out;
+            padding: 1.5rem; color: white; overflow-y: auto;
+        }
+        #sidebar.open { transform: translateX(0); }
+        
+        /* Custom styles for range sliders */
+        input[type="range"] {
+            -webkit-appearance: none; appearance: none; width: 100%; height: 8px;
+            background: #4a5568; border-radius: 5px; outline: none; opacity: 0.7; transition: opacity .2s;
+        }
+        input[type="range"]:hover { opacity: 1; }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none; width: 20px; height: 20px;
+            background: #a0aec0; cursor: pointer; border-radius: 50%; border: 2px solid #1a202c;
+        }
+        /* Style for disabled sliders */
+        input[type="range"]:disabled { opacity: 0.4; }
+        input[type="range"]:disabled::-webkit-slider-thumb { background: #718096; }
+        
+        /* Styles for toggle switch */
+        .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #4a5568; transition: .4s; border-radius: 28px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px;
+            background-color: white; transition: .4s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #63b3ed; }
+        input:checked + .slider:before { transform: translateX(22px); }
+    </style>
+    
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "Kaleidoscope",
+      "description": "An interactive webcam kaleidoscope that transforms your camera feed into a mesmerizing, real-time visual art piece with customizable patterns and motion.",
+      "url": "https://pirillo.com/arcade/kaleidoscope.html",
+      "image": "https://pirillo.com/arcade/images/kaleidoscope.png",
+      "author": {
+        "@type": "Person",
+        "name": "Chris Pirillo",
+        "url": "https://chris.pirillo.com/"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Pirillo",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://pirillo.com/logo.png"
+        }
+      },
+      "mainEntity": {
+        "@type": "SoftwareApplication",
+        "name": "Kaleidoscope",
+        "operatingSystem": "All",
+        "applicationCategory": "Game",
+        "offers": {
+          "@type": "Offer",
+          "price": "0"
+        }
+      }
+    }
+    </script>
+    
+    <!-- Google Analytics (Moved to end of head) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-1CQ4D3VQ3L"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-1CQ4D3VQ3L');
+    </script>
+</head>
+<body class="bg-black">
+
+    <main>
+        <video id="video-feed" autoplay playsinline muted aria-label="Webcam feed for kaleidoscope effect."></video>
+        <canvas id="kaleidoscope-canvas" aria-label="Kaleidoscope visual output."></canvas>
+
+        <aside id="sidebar" class="text-gray-200">
+            <div class="space-y-6">
+                <h2 class="text-2xl font-bold border-b border-gray-600 pb-2 mb-6">Settings</h2>
+                <section class="space-y-4" aria-labelledby="slices-heading">
+                    <h3 id="slices-heading" class="sr-only">Slice Controls</h3>
+                    <div class="flex justify-between items-center"><label for="slices-slider" class="font-medium">Slices</label><span id="slices-value" class="px-2 py-1 text-sm bg-gray-700 rounded-md">12</span></div>
+                    <input id="slices-slider" type="range" min="2" max="48" value="12" step="1" class="w-full" aria-label="Number of kaleidoscope slices">
+                </section>
+
+                <section class="space-y-4 pt-4 border-t border-gray-700" aria-labelledby="source-controls-heading">
+                    <h3 id="source-controls-heading" class="sr-only">Source Controls</h3>
+                    <div class="flex justify-between items-center"><label for="zoom-slider" class="font-medium">Zoom</label><span id="zoom-value" class="px-2 py-1 text-sm bg-gray-700 rounded-md">1.0</span></div>
+                    <input id="zoom-slider" type="range" min="1" max="5" value="1" step="0.1" class="w-full" aria-label="Zoom level">
+                    
+                    <div class="flex justify-between items-center"><label for="rotation-slider" class="font-medium">Rotation</label><span id="rotation-value" class="px-2 py-1 text-sm bg-gray-700 rounded-md">0°</span></div>
+                    <input id="rotation-slider" type="range" min="0" max="360" value="0" step="1" class="w-full" aria-label="Rotation angle">
+
+                    <div class="flex justify-between items-center"><label for="offset-x-slider" class="font-medium">X Offset</label><span id="offset-x-value" class="px-2 py-1 text-sm bg-gray-700 rounded-md">0</span></div>
+                    <input id="offset-x-slider" type="range" min="-300" max="300" value="0" step="1" class="w-full" aria-label="Horizontal offset">
+
+                    <div class="flex justify-between items-center"><label for="offset-y-slider" class="font-medium">Y Offset</label><span id="offset-y-value" class="px-2 py-1 text-sm bg-gray-700 rounded-md">0</span></div>
+                    <input id="offset-y-slider" type="range" min="-300" max="300" value="0" step="1" class="w-full" aria-label="Vertical offset">
+
+                    <div class="flex justify-between items-center"><label for="spin-toggle" class="font-medium">Auto-Motion</label><label class="switch"><input type="checkbox" id="spin-toggle"><span class="slider"></span></label></div>
+                </section>
+            </div>
+        </aside>
+
+        <nav id="menu-container" aria-label="Settings menu">
+            <button id="menu-toggle" aria-label="Toggle settings menu" aria-haspopup="true" aria-expanded="false">
+                <div class="hamburger-line"></div><div class="hamburger-line"></div><div class="hamburger-line"></div>
+            </button>
+        </nav>
+        <div id="message-box" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-2000" role="alertdialog" aria-labelledby="message-title" aria-describedby="message-text">
+            <div class="bg-white text-black p-8 rounded-lg shadow-xl max-w-sm text-center">
+                <h2 id="message-title" class="text-xl font-bold mb-4">Webcam Access Required</h2>
+                <p id="message-text">This application needs access to your webcam to work.</p>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Main application logic -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get all necessary DOM elements
+            const video = document.getElementById('video-feed');
+            const canvas = document.getElementById('kaleidoscope-canvas');
+            const ctx = canvas.getContext('2d');
+            const sidebar = document.getElementById('sidebar');
+            const menuToggle = document.getElementById('menu-toggle');
+            
+            const slicesSlider = document.getElementById('slices-slider');
+            const slicesValue = document.getElementById('slices-value');
+            
+            const zoomSlider = document.getElementById('zoom-slider');
+            const zoomValue = document.getElementById('zoom-value');
+            const rotationSlider = document.getElementById('rotation-slider');
+            const rotationValue = document.getElementById('rotation-value');
+            const offsetXSlider = document.getElementById('offset-x-slider');
+            const offsetXValue = document.getElementById('offset-x-value');
+            const offsetYSlider = document.getElementById('offset-y-slider');
+            const offsetYValue = document.getElementById('offset-y-value');
+            const spinToggle = document.getElementById('spin-toggle');
+            
+            const messageBox = document.getElementById('message-box');
+            
+            // Settings object to hold all kaleidoscope parameters
+            let settings = {
+                slices: 12,
+                zoom: 1.0, rotation: 0, offsetX: 0, offsetY: 0, 
+                spin: true, // Auto-spin is now on by default
+                // NEW: velocity parameters for natural motion
+                rotationVelocity: 0,
+                offsetXVelocity: 0,
+                offsetYVelocity: 0,
+            };
+            let animationFrameId = null;
+
+            // Event listeners for all controls
+            menuToggle.addEventListener('click', () => {
+                const isOpen = sidebar.classList.toggle('open');
+                menuToggle.setAttribute('aria-expanded', isOpen);
+            });
+            slicesSlider.addEventListener('input', e => { settings.slices = parseInt(e.target.value); slicesValue.textContent = settings.slices; });
+            zoomSlider.addEventListener('input', e => { 
+                settings.zoom = parseFloat(e.target.value); 
+                zoomValue.textContent = settings.zoom.toFixed(1);
+                updateConstraints(); // Recalculate constraints when zoom changes
+            });
+            rotationSlider.addEventListener('input', e => { settings.rotation = parseInt(e.target.value); rotationValue.textContent = `${settings.rotation}°`; });
+            offsetXSlider.addEventListener('input', e => { settings.offsetX = parseInt(e.target.value); offsetXValue.textContent = settings.offsetX; });
+            offsetYSlider.addEventListener('input', e => { settings.offsetY = parseInt(e.target.value); offsetYValue.textContent = settings.offsetY; });
+            spinToggle.addEventListener('change', e => { 
+                settings.spin = e.target.checked;
+                toggleMotionControls();
+            });
+            
+            // Set the initial state of the spin toggle and motion controls
+            spinToggle.checked = settings.spin;
+            toggleMotionControls();
+
+            // Initialize webcam stream
+            async function initWebcam() {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+                    video.srcObject = stream;
+                    
+                    // --- FIX START ---
+                    // Explicitly call play() to start the video stream.
+                    // This is crucial for compatibility with modern browser autoplay policies.
+                    video.play();
+                    // --- FIX END ---
+
+                    video.onloadedmetadata = () => {
+                        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+                        // Set initial constraints once video metadata is loaded
+                        updateConstraints();
+                        animationFrameId = requestAnimationFrame(draw);
+                    };
+                } catch (err) {
+                    // --- FIX START ---
+                    // Log the specific error to the console for easier debugging.
+                    console.error("Error accessing webcam: ", err);
+                    // --- FIX END ---
+                    messageBox.classList.remove('hidden');
+                }
+            }
+
+            // NEW: Disable/enable manual controls based on auto-motion state
+            function toggleMotionControls() {
+                rotationSlider.disabled = settings.spin;
+                offsetXSlider.disabled = settings.spin;
+                offsetYSlider.disabled = settings.spin;
+            }
+
+            // UPDATED: Calculate constraints for zoom and offset
+            function updateConstraints() {
+                if (!video.videoWidth || !video.videoHeight) return;
+
+                // --- Zoom Constraint ---
+                const canvasDiagonal = Math.hypot(canvas.width, canvas.height);
+                const videoMinDimension = Math.min(video.videoWidth, video.videoHeight);
+                const minZoom = canvasDiagonal / videoMinDimension;
+                zoomSlider.min = minZoom;
+                if (settings.zoom < minZoom) {
+                    settings.zoom = minZoom;
+                    zoomSlider.value = minZoom;
+                    zoomValue.textContent = minZoom.toFixed(1);
+                }
+
+                // --- Offset Constraints ---
+                const scaledWidth = video.videoWidth * settings.zoom;
+                const scaledHeight = video.videoHeight * settings.zoom;
+                const maxX = Math.max(0, (scaledWidth - canvas.width) / 2);
+                const maxY = Math.max(0, (scaledHeight - canvas.height) / 2);
+
+                offsetXSlider.max = maxX;
+                offsetXSlider.min = -maxX;
+                offsetYSlider.max = maxY;
+                offsetYSlider.min = -maxY;
+
+                // Clamp current offset if it's out of bounds
+                settings.offsetX = Math.max(-maxX, Math.min(maxX, settings.offsetX));
+                settings.offsetY = Math.max(-maxY, Math.min(maxY, settings.offsetY));
+            }
+
+            // Main drawing loop
+            function draw() {
+                // --- FIX START ---
+                // More robust check to ensure the video is ready and playing before drawing.
+                if (video.paused || video.ended || video.readyState < 4) {
+                // --- FIX END ---
+                    animationFrameId = requestAnimationFrame(draw);
+                    return;
+                }
+                
+                // NEW: Handle natural, randomized motion
+                if(settings.spin) {
+                    // Add a small random "nudge" to the velocities
+                    settings.rotationVelocity += (Math.random() - 0.5) * 0.02;
+                    settings.offsetXVelocity += (Math.random() - 0.5) * 0.1;
+                    settings.offsetYVelocity += (Math.random() - 0.5) * 0.1;
+
+                    // Apply friction/damping to prevent runaway speeds
+                    settings.rotationVelocity *= 0.98;
+                    settings.offsetXVelocity *= 0.98;
+                    settings.offsetYVelocity *= 0.98;
+
+                    // Update settings based on velocity
+                    settings.rotation = (settings.rotation + settings.rotationVelocity) % 360;
+                    settings.offsetX += settings.offsetXVelocity;
+                    settings.offsetY += settings.offsetYVelocity;
+
+                    // Clamp offsets to stay within bounds
+                    updateConstraints();
+
+                    // Update UI display
+                    rotationSlider.value = settings.rotation;
+                    offsetXSlider.value = settings.offsetX;
+                    offsetYSlider.value = settings.offsetY;
+                    rotationValue.textContent = `${Math.floor(settings.rotation)}°`;
+                    offsetXValue.textContent = Math.floor(settings.offsetX);
+                    offsetYValue.textContent = Math.floor(settings.offsetY);
+                }
+
+                // Check if canvas has been resized
+                const oldCanvasWidth = canvas.width;
+                const oldCanvasHeight = canvas.height;
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+
+                // If resized, recalculate the constraints
+                if (canvas.width !== oldCanvasWidth || canvas.height !== oldCanvasHeight) {
+                    updateConstraints();
+                }
+                
+                // Directly call the wedge pattern renderer
+                drawWedgePattern();
+                
+                animationFrameId = requestAnimationFrame(draw);
+            }
+
+            // Helper function to draw the transformed video frame
+            function drawVideo(targetCtx, mirrorX = 1, mirrorY = 1) {
+                targetCtx.save();
+                targetCtx.scale(mirrorX, mirrorY);
+                targetCtx.translate(settings.offsetX, settings.offsetY);
+                targetCtx.rotate(settings.rotation * Math.PI / 180);
+                targetCtx.scale(settings.zoom, settings.zoom);
+                if (video.videoWidth > 0) {
+                    targetCtx.drawImage(video, -video.videoWidth / 2, -video.videoHeight / 2, video.videoWidth, video.videoHeight);
+                }
+                targetCtx.restore();
+            }
+
+            // The primary drawing function for the wedge pattern
+            function drawWedgePattern() {
+                ctx.save();
+                ctx.translate(canvas.width / 2, canvas.height / 2);
+                const sliceAngle = (Math.PI * 2) / settings.slices;
+                for (let i = 0; i < settings.slices; i++) {
+                    ctx.save();
+                    ctx.rotate(i * sliceAngle);
+                    ctx.beginPath();
+                    // Use a radius that's guaranteed to cover the corners of the canvas
+                    const maxRadius = Math.hypot(canvas.width, canvas.height) / 2;
+                    // The wedge uses an arc for a rounded, seamless effect
+                    ctx.moveTo(0, 0);
+                    ctx.arc(0, 0, maxRadius * 1.01, -sliceAngle / 2, sliceAngle / 2); // 1% overlap to be safe
+                    ctx.closePath();
+                    ctx.clip();
+                    drawVideo(ctx, i % 2 === 0 ? -1 : 1, 1);
+                    ctx.restore();
+                }
+                ctx.restore();
+            }
+            
+            // Initial setup
+            initWebcam();
+        });
+    </script>
+</body>
+</html>
